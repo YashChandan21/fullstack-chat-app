@@ -10,6 +10,7 @@ import messageRoutes from './routes/message.route.js';
 
 import { connectDB } from './lib/db.js';
 import { app, server } from "./lib/socket.js";
+import { initializeFirebase } from './lib/firebase.js';
 
 dotenv.config();
 
@@ -39,4 +40,5 @@ if(process.env.NODE_ENV === "production"){
 server.listen(PORT, () => {
     console.log("Server is running on PORT:" + PORT);
     connectDB();
-})
+    initializeFirebase();
+});
