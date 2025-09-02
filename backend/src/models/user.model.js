@@ -13,12 +13,19 @@ const userSchema = new mongoose.Schema(
         },
         password:{
             type: String,
-            required: true,
+            required: function() {
+                return !this.firebaseUid; // Password not required for Firebase users
+            },
             minlength:6,
         },
         profilePic:{
             type: String,
             default: "",
+        },
+        firebaseUid: {
+            type: String,
+            unique: true,
+            sparse: true, // Allows null values
         },
     },
     {timestamps: true}
