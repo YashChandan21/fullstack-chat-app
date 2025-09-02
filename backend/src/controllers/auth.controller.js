@@ -2,7 +2,6 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
-import { verifyFirebaseToken, initializeFirebase } from "../lib/firebase.js";
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -115,65 +114,5 @@ export const checkAuth = (req, res) => {
   } catch (error) {
     console.log("Error in checkAuth controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-// Firebase Google Authentication
-export const firebaseAuth = async (req, res) => {
-  const { idToken } = req.body;
-  
-  try {
-    if (!idToken) {
-      return res.status(400).json({ message: "Firebase ID token is required" });
-    }
-
-    // Initialize Firebase if not already done
-    initializeFirebase();
-
-    // Verify the Firebase ID token
-    const decodedToken = await verifyFirebaseToken(idToken);
-    const { uid, email, name, picture } = decodedToken;
-
-    if (!email) {
-      return res.status(400).json({ message: "Email not provided by Google" });
-    }
-
-    // Check if user already exists
-    let user = await User.findOne({ 
-      $or: [{ email }, { firebaseUid: uid }] 
-    });
-
-    if (user) {
-      // Update existing user with Firebase UID if not already set
-      if (!user.firebaseUid) {
-        user.firebaseUid = uid;
-        if (picture && !user.profilePic) {
-          user.profilePic = picture;
-        }
-        await user.save();
-      }
-    } else {
-      // Create new user for Firebase authentication
-      user = new User({
-        fullName: name || email.split('@')[0],
-        email,
-        firebaseUid: uid,
-        profilePic: picture || "",
-      });
-      await user.save();
-    }
-
-    // Generate JWT token for session management
-    generateToken(user._id, res);
-
-    res.status(200).json({
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      profilePic: user.profilePic,
-    });
-  } catch (error) {
-    console.log("Error in firebaseAuth controller", error.message);
-    res.status(500).json({ message: "Firebase authentication failed" });
   }
 };
